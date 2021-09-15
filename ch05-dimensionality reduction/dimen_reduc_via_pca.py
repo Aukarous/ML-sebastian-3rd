@@ -43,7 +43,7 @@ def lr_using_2_prin_com():
     plt.tight_layout()
     plt.show()
 
-    plot_decision_regions(X_test_pca,y_test,classifier=lr)
+    plot_decision_regions(X_test_pca, y_test, classifier=lr)
     plt.xlabel('PC 1')
     plt.ylabel('PC 2')
     plt.legend(loc='lower left')

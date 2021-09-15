@@ -7,9 +7,12 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.linear_model import LogisticRegression
+from dimen_reduc_via_pca import plot_decision_regions
 
 
-def sort_eigenvectors(eigen_vals, ei):
+def sort_eigenvectors(eigen_vals, eigen_vecs):
     # make a list of (eigenvalue, eigenvector) tuples
     eigen_pairs = [(np.abs(eigen_vals[i]), eigen_vecs[:, i]) for i in range(len(eigen_vals))]
 
@@ -56,6 +59,28 @@ def sort_eigenvectors(eigen_vals, ei):
     plt.tight_layout()
     plt.show()
 
+    """
+    LDA via scikit-learn
+    """
+    lda = LDA(n_components=2)
+    X_train_lad = lda.fit_transform(X_train_std, y_train)
+    lr = LogisticRegression(multi_class='ovr', random_state=1, solver='lbfgs')
+    lr = lr.fit(X_train_lda, y_train)
+    plot_decision_regions(X_train_lda, y_train, classifier=lr)
+    plt.xlabel('LD 1')
+    plt.ylabel('LD 2')
+    plt.legend(loc='lower left')
+    plt.tight_layout()
+    plt.show()
+
+    X_test_lda = lda.transform(X_test_std)
+    plot_decision_regions(X_test_lda, y_test, classifier=lr)
+    plt.xlabel('LD 1')
+    plt.ylabel('LD 2')
+    plt.legend(loc='lower left')
+    plt.tight_layout()
+    plt.show()
+
 
 def solve_generalized_eigenvalue():
     d = 13
@@ -96,6 +121,7 @@ if __name__ == "__main__":
 
     sc = StandardScaler()
     X_train_std = sc.fit_transform(X_test)
+    X_test_std = sc.transform(X_test)
 
     # Solve the generalized eigenvalue problem for the matrix $S_W^{-1}S_B$
     solve_generalized_eigenvalue()

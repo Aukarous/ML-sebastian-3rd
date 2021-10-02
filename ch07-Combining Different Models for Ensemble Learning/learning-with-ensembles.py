@@ -1,36 +1,65 @@
 # coding: utf-8
 import math
-import operator
-from itertools import product
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import sklearn.pipeline
-
-from sklearn import datasets
-from sklearn.pipeline import Pipeline
-
-from sklearn.base import BaseEstimator
-from sklearn.base import ClassifierMixin
-from sklearn.base import clone
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
-
-from sklearn.metrics import auc
-from sklearn.metrics import roc_curve
-from sklearn.metrics import accuracy_score
-
-from sklearn.ensemble import BaggingClassifier
-from sklearn.ensemble import AdaBoostClassifier
-
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import StandardScaler
-
+import numpy as np
 from scipy.special import comb
+
+
+def learning_with_ensembles():
+    def ensemble_error(n_classifier, error):
+        k_start = int(math.ceil(n_classifier / 2.))
+        prob_s = [comb(n_classifier, k) * error ** k * (1 - error) ** (n_classifier - k) for k in
+                  range(k_start, n_classifier + 1)]
+        return sum(prob_s)
+
+    ensemble_error(n_classifier=11, error=0.25)
+
+    error_range = np.arange(0.0, 1.01, 0.01)
+    ens_errors = [ensemble_error(n_classifier=11, error=error) for error in error_range]
+
+    plt.plot(error_range,ens_errors, label='Ensemble error', linewidth = 2)
+    plt.plot(error_range,error_range, linestyle='--',label='Base error',linewidth=2)
+
+    plt.xlabel('Base error')
+    plt.ylabel('Base/Ensemble error')
+    plt.legend(loc='upper left')
+    plt.grid(alpha=0.5)
+    plt.show()
+
+
+if __name__ == "__main__":
+    learning_with_ensembles()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

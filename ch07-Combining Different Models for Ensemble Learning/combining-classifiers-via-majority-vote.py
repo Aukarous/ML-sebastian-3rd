@@ -143,12 +143,85 @@ def simple_majority_vote_classifier():
     print(np.argmax(p))
 
 
-def evaluate_tuning_ensemble_classifier():
-    colors = ['black', 'orange', 'blue','green']
-    line_styles = [':', '--','-.','-']
-    for clf, label, clr, ls in zip(all_clf, clf_labels, colors, line_styles):
+def evaluate_tuning_ensemble_classifier(clf_labels_t):
+    colors = ['black', 'orange', 'blue', 'green']
+    line_styles = [':', '--', '-.', '-']
+    for clf_t, label_t, clr, ls in zip(all_clf, clf_labels_t, colors, line_styles):
         # assuming the label of the positive class is 1
-        y_pred = clf.fit(X_train, y_train).predict_proba(X_test)[:,1]
+        y_pred = clf_t.fit(X_train, y_train).predict_proba(X_test)[:, 1]
+        fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pred)
+        roc_auc = auc(x=fpr, y=tpr)
+        plt.plot(fpr, tpr, color=clr, linestyle=ls, label_t='%s (auc=%0.2f)' % (label_t, roc_auc))
+
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
+    plt.xlim([-0.1, 1.1])
+    plt.ylim([-0.1, 1.1])
+    plt.grid(alpha=0.5)
+    plt.xlabel('False positive rate (FPR)')
+    plt.ylabel('True positive rate (TPR)')
+    plt.show()
+
+    # ——————————————————————————————————————————————————————————
+    sc = StandardScaler()
+    X_train_std = sc.fit_transform(X_train)
+    all_clf2 = [pipe1, clf2, pipe3, mv_clf]
+    x_min = X_train_std[:, 0].min() - 1
+    x_max = X_train_std[:, 0].max() - 1
+    y_min = X_train_std[:, 1].min() - 1
+    y_max = X_train_std[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
+    f, ax_arr = plt.subplots(nrows=2, ncols=2, sharex='col', sharey='row', figsize=(7, 5))
+
+    for idx, clf_t, tt in zip(product([0, 1], [0, 1]), all_clf2, clf_labels_t):
+        clf_t.fit(X_train_std, y_train)
+        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+
+        ax_arr[idx[0], idx[1]].contourf(xx, yy, Z, alpha=0.3)
+        ax_arr[idx[0], idx[1]].scatter(X_train_std[y_train == 0, 0], X_train_std[y_train == 0, 1],
+                                       c='blue', marker='^', s=50)
+        ax_arr[idx[0], idx[1]].scatter(X_train_std[y_train == 1, 0], X_train_std[y_train == 1, 1],
+                                       c='green', marker='o', s=50)
+
+        ax_arr[idx[0], idx[1]].set_title(tt)
+
+    plt.text(-3.5, -5., s='Sepal with [standardized]', ha='center', va='center', fontsize=12)
+    plt.text(-12.5, 4.5, s='Petal length [standardized]', ha='center', va='center', fontsize=12, rotation=90)
+    plt.show()
+
+    # ————————————————————————————————————————————————————————————
+    mv_clf.get_params()
+    params = {'decision_tree_classifier_max_depth': [1, 2], 'pipeline-1__clf__C': [0.001, 0.1, 100.0]}
+    grid = GridSearchCV(estimator=mv_clf, param_grid=params, cv=10, iid=False, scoring='roc_auc')
+    grid.fit(X_train, y_train)
+    for r, _ in enumerate(grid.cv_results_['mean_test_score']):
+        print('%0.3f +/- %0.2f %r' %
+              (grid.cv_results_['mean_test_score'][r],
+               grid.cv_results_['std_test_score'][r] / 2.0,
+               grid.cv_results_['params'][r]))
+
+    print('Best parameters: %s' % grid.best_params_)
+    print('Accuracy： %.2f' % grid.best_score_)
+    """
+    **Note**  
+    By default, the default setting for `refit` in `GridSearchCV` is `True` (i.e., `GridSeachCV(..., refit=True)`), 
+    which means that we can use the fitted `GridSearchCV` estimator to make predictions via the `predict` method, 
+    for example:
+     
+         grid = GridSearchCV(estimator=mv_clf, 
+                             param_grid=params, 
+                             cv=10, 
+                             scoring='roc_auc')
+         grid.fit(X_train, y_train)
+         y_pred = grid.predict(X_test)
+     
+    In addition, the "best" estimator can directly be accessed via the `best_estimator_` attribute.
+    """
+    print("grid.best_estimator_.classifiers is {}".format(grid.best_estimator_.classifiers))
+
+    mv_clf_t = grid.best_estimator_
+    mv_clf_t.set_params(**grid.best_estimator_.get_params())
 
 
 if __name__ == "__main__":
@@ -185,4 +258,4 @@ if __name__ == "__main__":
         print('ROC AUC: %0.2f (+/- %0.2f) [%s]' % (scores.mean(), scores.std(), label))
 
     # Evaluating and tuning the ensemble classifier
-    evaluate_tuning_ensemble_classifier()
+    evaluate_tuning_ensemble_classifier(clf_labels_t=clf_labels)

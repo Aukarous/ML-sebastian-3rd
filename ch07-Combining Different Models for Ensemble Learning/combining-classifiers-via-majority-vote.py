@@ -1,39 +1,24 @@
 # coding: utf-8
-import math
-import operator
 from itertools import product
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import sklearn.pipeline
-
+import numpy as np
 from sklearn import datasets
-from sklearn.pipeline import Pipeline
-from sklearn.pipeline import _name_estimators
-
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import clone
-
 from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
-
 from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import accuracy_score
-
-from sklearn.ensemble import BaggingClassifier
-from sklearn.ensemble import AdaBoostClassifier
-
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import _name_estimators
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 
 
 class MajorityVoteClassifier(BaseEstimator, ClassifierMixin):
@@ -80,24 +65,24 @@ class MajorityVoteClassifier(BaseEstimator, ClassifierMixin):
         # Use LabelEncoder to ensure class labels start with 0, which is important for np.argmax call in self.predict
         self.label_enc_.fit(y)
         self.classes_ = self.label_enc_.classes_
-        for clf in self.classifiers:
-            fitted_clf = clone(clf).fit(X, self.label_enc_.transform(y))
+        for clf_t in self.classifiers:
+            fitted_clf = clone(clf_t).fit(X, self.label_enc_.transform(y))
             self.classifiers_.append(fitted_clf)
 
         return self
 
-    def predict_proba(self, X):
+    def predict_proba(self, x):
         """Predict class probabilities for X.
 
         Args:
-            X: {array-like, sparse matrix}, shape = [n_examples, n_features]
+            x: {array-like, sparse matrix}, shape = [n_examples, n_features]
                 Training vectors, where n_examples is the number of examples and n_features is the number of features.
 
         Returns:
             avg_proba : array-like, shape = [n_examples, n_classes]
                 Weighted average probability for each class per example.
         """
-        proba_s = np.asarray([clf.predict_proba(X) for clf in self.classifiers_])
+        proba_s = np.asarray([clf_t.predict_proba(x) for clf_t in self.classifiers_])
         avg_proba = np.average(proba_s, axis=0, weights=self.weights)
         return avg_proba
 
@@ -222,6 +207,7 @@ def evaluate_tuning_ensemble_classifier(clf_labels_t):
 
     mv_clf_t = grid.best_estimator_
     mv_clf_t.set_params(**grid.best_estimator_.get_params())
+    print("best_params:{}".format(mv_clf_t))
 
 
 if __name__ == "__main__":
